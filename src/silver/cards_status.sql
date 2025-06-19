@@ -55,7 +55,8 @@ table_standardized AS (
     ,CAST(
       CASE 
         WHEN TRIM(UPPER(card_status)) = 'PERMANENTLY_TERMINATED' AND ended_at = 'null' THEN started_at
-        ELSE COALESCE(ended_at, '9999-12-31') 
+        WHEN ended_at = 'null' THEN '9999-12-31'
+        ELSE COALESCE(ended_at, '9999-12-31')
       END
     AS DATE) AS ended_at
 
