@@ -92,8 +92,12 @@ table_enriched AS (
     -- Calculate the duration of each status in days. For active records,
     -- this calculates the duration up to the current date.
     ,CAST(
-      DATEDIFF(day, tbs.started_at, COALESCE(tbs.ended_at, (SELECT MAX(current_date_trans) FROM current_date_trans)))
-    AS INT) AS status_duration_days
+      DATEDIFF(day, tbs.started_at, 
+        CASE 
+          WHEN tbs.ended_at <> '9999-12-31' THEN tbs.ended_at 
+          ELSE (SELECT MAX(current_date_trans) FROM current_date_trans) 
+        END
+      ) AS INT) AS status_duration_days
 
   FROM table_standardized AS tbs
 )
