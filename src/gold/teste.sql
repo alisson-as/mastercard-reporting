@@ -1,0 +1,1 @@
+select count(*) from silver.mastercard_reporting.cards_transactions

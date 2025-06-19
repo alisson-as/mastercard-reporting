@@ -14,4 +14,4 @@ SELECT
   ,CAST(transaction_date AS TIMESTAMP_NTZ) AS transaction_date
   ,CAST(amount AS FLOAT) AS amount
 
-FROM bronze.mastercard_reporting.cards_transactions TABLESAMPLE (0.01 PERCENT)
+FROM bronze.mastercard_reporting.cards_transactions --TABLESAMPLE (0.01 PERCENT)
