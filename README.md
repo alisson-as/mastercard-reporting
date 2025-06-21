@@ -1,4 +1,4 @@
-# mastercard-reporting
+# Mastercard Reporting
 Tracking active cards for Mastercard Quarterly Reports (QMR)
 
 ## Overview
