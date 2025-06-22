@@ -34,7 +34,6 @@ active_beginning_quarter AS (
   LEFT JOIN silver.mastercard_reporting.cards_status AS c
     ON c.started_at < q.quarter_start_date -- Getting always the latest date previous quarter
     AND (c.is_status_currently_active = 1 OR c.ended_at >= q.quarter_start_date) -- Getting all cards that were active (ended_at = '9999-12-31') or that were active at the start of the quarter analysed
-  --
 
   GROUP BY
     q.quarter_start_date
@@ -43,6 +42,17 @@ active_beginning_quarter AS (
     COUNT(DISTINCT c.card_number) > 0
 ),
 
+cards_open_beginning_quarter AS (
+  SELECT
+     DISTINCT
+     CAST(q.quarter_start_date AS DATE) AS quarter_start_date
+    ,c.card_number
+
+  FROM quarters AS q
+  LEFT JOIN silver.mastercard_reporting.cards_status AS c
+    ON c.started_at < q.quarter_start_date -- Getting always the latest date previous quarter
+    AND card_status = 1
+),
 -- Counting all cards that were obtained into the quarter
 new_cards_obtained_into_quarter AS (
   SELECT
@@ -51,9 +61,15 @@ new_cards_obtained_into_quarter AS (
 
   FROM quarters AS q
   LEFT JOIN silver.mastercard_reporting.cards_status AS c
-      ON c.started_at >= q.quarter_start_date
-      AND c.started_at <= DATE_ADD(ADD_MONTHS(quarter_start_date, 3), -1)
-      AND card_status = 1
+    ON c.started_at >= q.quarter_start_date
+    AND c.started_at <= DATE_ADD(ADD_MONTHS(quarter_start_date, 3), -1)
+    AND card_status = 1
+  LEFT JOIN cards_open_beginning_quarter AS co
+    ON c.card_number = co.card_number
+    AND q.quarter_start_date = co.quarter_start_date
+
+  WHERE 1=1
+  AND co.card_number IS NULL
 
   GROUP BY
     q.quarter_start_date
@@ -94,11 +110,10 @@ active_end_quarter AS (
 ),
 
 -- CTE to count the number of transactions per card and quarter
-cards_qty_transactions AS (
+cards_yes_transactions_into_quarter AS (
   SELECT
      CAST(q.quarter_start_date AS DATE) AS quarter_start_date
-    ,card_number
-    ,COUNT(ct.card_number) AS qty_cards_transactions_quarter
+    ,COUNT(DISTINCT ct.card_number) AS qty_cards_transactions_quarter
 
   FROM quarters AS q
   LEFT JOIN silver.mastercard_reporting.cards_transactions ct
@@ -106,29 +121,7 @@ cards_qty_transactions AS (
       AND ct.transaction_date <= DATE_ADD(ADD_MONTHS(quarter_start_date, 3), -1)
       
   GROUP BY
-     CAST(q.quarter_start_date AS DATE)
-    ,card_number
-),
-
-cards_yes_transactions_into_quarter AS (
-  SELECT
-     CAST(q.quarter_start_date AS DATE) AS quarter_start_date
-    ,COUNT(ct.card_number) AS qty_cards_transactions_quarter
-
-  FROM quarters AS q
-  LEFT JOIN silver.mastercard_reporting.cards_status AS c
-      ON c.started_at >= q.quarter_start_date
-      AND c.started_at <= DATE_ADD(ADD_MONTHS(quarter_start_date, 3), -1)
-  LEFT JOIN cards_qty_transactions AS ct
-      ON ct.card_number = c.card_number
-      AND ct.quarter_start_date = q.quarter_start_date
-
-  WHERE 1=1
-  AND ct.card_number IS NOT NULL
-
-  GROUP BY
-    q.quarter_start_date
-
+    CAST(q.quarter_start_date AS DATE)
 )
 
 -- Grouping and counting cards in each quarter
